@@ -1,0 +1,42 @@
+- hosts: all
+  become: yes
+  tasks:
+
+    # 1. Copy Dockerfile
+    - name: Copy Dockerfile from Jenkins to worker node
+      copy:
+        src: /var/lib/jenkins/workspace/First-Job/Dockerfile
+        dest: /home/devops/Dockerfile
+        mode: "0644"
+
+    # 2. Copy WAR file
+    - name: Copy WAR file from Jenkins to worker node
+      copy:
+        src: /var/lib/jenkins/workspace/First-Job/webapp/target/webapp.war
+        dest: /home/devops/webapp.war
+        mode: "0644"
+
+    # 3. Stop existing container
+    - name: Stop the running container if exists
+      command: docker stop tomcatcontainer
+      ignore_errors: true
+
+    # 4. Remove old container
+    - name: Remove old container
+      command: docker rm tomcatcontainer
+      ignore_errors: true
+
+    # 5. Remove old image
+    - name: Remove old Docker image
+      command: docker rmi tomcatimage
+      ignore_errors: true
+
+    # 6. Build new image
+    - name: Build Docker image
+      command: docker build -t tomcatimage .
+      args:
+        chdir: /home/devops
+
+    # 7. Run container
+    - name: Run Docker container
+      command: docker run -d --name tomcatcontainer -p 8082:8080 tomcatimage
